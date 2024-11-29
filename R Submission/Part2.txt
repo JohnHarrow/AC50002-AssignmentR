@@ -1,0 +1,73 @@
+# Data set taken from: https://rdrr.io/cran/dslabs/man/movielens.html
+
+# [1] Creation of the dataset
+# Load Libraries.
+library(tidyverse)
+
+# Import Files.
+data1 <- read.csv("movies.csv")
+data2 <- read.csv("ratings.csv")
+
+# Merge files into one.
+movie_ratings <- left_join(data2, data1, by = "movieId")
+
+
+
+# [2] Top-rated movies
+top_rated_movies <- movie_ratings %>% 
+  group_by(title) %>% # Groups by the name of the movie.
+  summarise( # Creates a new table with just the name of the movie, the average rating and the number of reviews for the movie.
+    average_rating = mean(rating), # Calculates the average using the mean() function.
+    count = n() # Counts the number of rows for each movie.
+  ) %>%
+  filter(count >= 100) %>% # Filters for obnly movies that have at least 100 reviews so tbhat the results are not skewed by having few reviews.
+  arrange(desc(average_rating)) # Orders the results descending in order of average rating.
+
+head(top_rated_movies, 10) # Displayes the top 10 results.
+
+
+
+# [3] Distribution of ratings
+ggplot(movie_ratings, aes(x = rating)) + # Puts rating on x-axis and the count for each on the y-axis.
+  geom_histogram(binwidth = 0.5, fill = "red", color = "black") + # Creates a bar chart.
+  labs(title = "Distribution of Ratings", x = "Rating", y = "Count") + # Adds labels to the chart.
+  theme_light() # Sets theme of graph to have light grid lines.
+
+
+
+# [4] Number of movies in each genre
+genre_count <- movie_ratings %>%
+  separate_rows(genres, sep = "\\|") %>% # Uses the separate_rows() function to split the entries in the genres column into multiple rows for each genre and is separated by "|".
+  group_by(genres) %>% # Groups by genres.
+  summarise(count = n()) %>% # Creates a new table which has a row for each genre and the number of movies in each.
+  arrange(desc(count)) # Sorts the genres by how many movies are in each by descending order.
+
+genre_count
+
+
+
+# [5] Graph to show number of movie ratings over time
+# Convert the timestamp to a date.
+movie_ratings_over_time <- movie_ratings %>%
+  mutate(date = as.POSIXct(timestamp, origin = "1970-01-01"))  # Uses the as.POSIXct() function to change the Unix timestamp into a POSIXct object which allows for the year to
+  # be extracted from the unix timestamp. The origin refers to the default Unix starting point. 
+  # The line above was created using what I learned from a chatGPT prompt which was: how to convert unix timestamp to date in R.
+
+# Extract the year from the new date column.
+movie_ratings_over_time <- movie_ratings_over_time %>%
+  mutate(year = format(date, "%Y"))  # Gets the year using the format() function by passing "%Y" which extracts the year as a number from date.
+
+# Add up the ratings per year.
+ratings_each_year <- movie_ratings_over_time %>%
+  group_by(year) %>% # Groups by year.
+  summarise(count = n()) %>% # Creates a new table with the number of reviews for each year.
+  arrange(year) # Sorts ascending by year.
+
+# Graph of how the number of ratings changed over time.
+ggplot(ratings_each_year, aes(x = as.numeric(year), y = count)) + # Makes the year the x-axis by converting it to a number and the y-axis the count for each year.
+  geom_line(color = "red", size = 1) + # Creats a red line joining the points.
+  geom_point(color = "red") + # Creates a red dot for each point on the graph.
+  labs(title = "Ratings Over Time", x = "Year", y = "Number of Ratings") + # Adds the labels to the graph.
+  theme_light() # Sets theme of graph to have light grid lines.
+
+

@@ -1,0 +1,26 @@
+# Load libraries.
+library(tidyverse)
+library(babynames)
+
+# Create table of 20th century male names: Using the filter function, a table containing all of the male names from the 20th century is created and stored in "names".
+names <- babynames %>%
+  filter(sex == "M", year >= 1900, year <= 1999)
+
+# Find the most popular male names: Using the previously created table, a new table is created which is grouped by name and a new column is created which is 
+# the sum of each name. Its is then arranged to be in descending order and the top threee rows are selected usince the slice_head() function.
+top3names <- names %>%
+  group_by(name) %>% # Groups by each name
+  summarize(total = sum(n)) %>% # summarize() used to create a new column which contains the total for each name.
+  arrange(desc(total)) %>% # arrange() used to order the names in descending order.
+  slice_head(n = 3) # slice_head() used to select only the top 3.
+
+# Get data for top 3 names: using the originally created table we can now create a new one by selecting the data for the top three names that were found in the previous step
+# using the filter() function by only taking the data for the names that are contained in the "top3names" table created in the previous step.
+namedata <- names %>%
+  filter(name %in% top3names$name)
+
+# Create a line graph: Using the data from the previous step a graph can now be created to show how the popularity of the 3 names changes over the century.
+ggplot(namedata, aes(x = year, y = n, color = name)) + # Setting the year as the x-axis, the number of babies with the name as the y-axis, and having a line drawn for each name.
+  geom_line(size = 1) + # Setting the size of the line to be clearly visible.
+  labs( x = "Year", y = "Number of Babies",color = "Name") + # Add the labels.
+  theme_light() # Sets theme of graph to have light grid lines.
